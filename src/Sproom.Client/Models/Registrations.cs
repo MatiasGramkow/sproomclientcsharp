@@ -42,3 +42,20 @@ public enum NetworkType
     NemHandel,
     Peppol
 }
+
+// ─── Legacy/Deprecated models ────────────────────────────────────
+
+public class LegacyRegistrationRead
+{
+    public DateTime? DeletedOnUtc { get; set; }
+    public Guid Id { get; set; }
+    public OrganizationIdentifier OrganizationIdentifier { get; set; } = new();
+    public Guid CompanyId { get; set; }
+    public List<RegistryEntry>? RegistryEntries { get; set; }
+}
+
+public class CreateRegistrationRequest
+{
+    public OrganizationIdentifier OrganizationIdentifier { get; set; } = new();
+    public List<string>? SupportedProfileRoles { get; set; }
+}

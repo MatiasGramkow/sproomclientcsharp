@@ -47,6 +47,45 @@ public class SproomClient : IDisposable
         };
     }
 
+    // ─── Child Companies ─────────────────────────────────────────────
+
+    public async Task<ChildCompanyDto> CreateChildCompanyAsync(CreateChildCompanyRequest request, CancellationToken ct = default)
+    {
+        return await PostAsync<ChildCompanyDto>("/api/child-companies", request, ct);
+    }
+
+    public async Task<List<ChildCompanyDto>> GetChildCompaniesAsync(CancellationToken ct = default)
+    {
+        return await GetAsync<List<ChildCompanyDto>>("/api/child-companies", ct);
+    }
+
+    public async Task<ChildCompanyDto> GetChildCompanyAsync(Guid childCompanyId, CancellationToken ct = default)
+    {
+        return await GetAsync<ChildCompanyDto>($"/api/child-companies/{childCompanyId}", ct);
+    }
+
+    public async Task DeleteChildCompanyAsync(Guid childCompanyId, CancellationToken ct = default)
+    {
+        await DeleteAsync($"/api/child-companies/{childCompanyId}", ct);
+    }
+
+    public async Task<ChildCompanyTokenResponse> GetChildCompanyTokenAsync(Guid childCompanyId, CancellationToken ct = default)
+    {
+        return await GetAsync<ChildCompanyTokenResponse>($"/api/child-companies/{childCompanyId}/token", ct);
+    }
+
+    public async Task CreateEnrollmentAsync(EnrollmentRequest request, CancellationToken ct = default)
+    {
+        await PostAsync<object>("/api/child-companies/enrollments", request, ct);
+    }
+
+    // ─── Company ─────────────────────────────────────────────────────
+
+    public async Task<CompanyDto> GetCompanyAsync(string orgId, CancellationToken ct = default)
+    {
+        return await GetAsync<CompanyDto>($"/api/companies/{Uri.EscapeDataString(orgId)}", ct);
+    }
+
     // ─── Documents ───────────────────────────────────────────────────
 
     public async Task<List<ApiDocument>> GetDocumentsAsync(int? skip = null, string? filter = null, CancellationToken ct = default)
@@ -86,6 +125,12 @@ public class SproomClient : IDisposable
                 }
             }
         }
+    }
+
+    [Obsolete("Use GetDocumentAsync with format parameter instead.")]
+    public async Task<ApiDocument> GetDocumentMetadataAsync(Guid documentId, CancellationToken ct = default)
+    {
+        return await GetAsync<ApiDocument>($"/api/documents/{documentId}", ct);
     }
 
     public async Task<byte[]> GetDocumentAsync(Guid documentId, ApiDocumentFormat format, CancellationToken ct = default)
@@ -194,6 +239,11 @@ public class SproomClient : IDisposable
         await DeleteAsync($"/api/reports/{reportId}", ct);
     }
 
+    public async Task<List<object>> GetReportsAsync(CancellationToken ct = default)
+    {
+        return await GetAsync<List<object>>("/api/reports", ct);
+    }
+
     // ─── Registrations ───────────────────────────────────────────────
 
     public async Task<List<RegistrationModel>> GetRegistrationsAsync(CancellationToken ct = default)
@@ -289,6 +339,50 @@ public class SproomClient : IDisposable
     public async Task DeleteChildSubscriptionAsync(string serviceType, Guid companyId, CancellationToken ct = default)
     {
         await DeleteAsync($"/api/subscriptions/{Uri.EscapeDataString(serviceType)}/{companyId}", ct);
+    }
+
+    // ─── Network Registrations (Deprecated) ────────────────────────
+
+    [Obsolete("Use GetRegistrationsAsync instead.")]
+    public async Task<List<LegacyRegistrationRead>> GetNetworkRegistrationsAsync(CancellationToken ct = default)
+    {
+        return await GetAsync<List<LegacyRegistrationRead>>("/api/network-registrations", ct);
+    }
+
+    [Obsolete("Use RegisterNemHandelAsync instead.")]
+    public async Task CreateNetworkRegistrationAsync(CreateRegistrationRequest request, CancellationToken ct = default)
+    {
+        await PostAsync<object>("/api/network-registrations", request, ct);
+    }
+
+    [Obsolete("Use GetRegistrationAsync instead.")]
+    public async Task<LegacyRegistrationRead> GetNetworkRegistrationAsync(Guid registrationId, CancellationToken ct = default)
+    {
+        return await GetAsync<LegacyRegistrationRead>($"/api/network-registrations/{registrationId}", ct);
+    }
+
+    [Obsolete("Use DeleteRegistrationAsync instead.")]
+    public async Task DeleteNetworkRegistrationAsync(Guid registrationId, CancellationToken ct = default)
+    {
+        await DeleteAsync($"/api/network-registrations/{registrationId}", ct);
+    }
+
+    [Obsolete("Use the new Registrations API instead.")]
+    public async Task<byte[]> GetNetworkIdByRegistrationIdAsync(Guid registrationId, NetworkType network, CancellationToken ct = default)
+    {
+        var response = await _http.GetAsync(
+            $"/api/network-registrations/networkId?registrationId={registrationId}&network={network}", ct);
+        await EnsureSuccessAsync(response);
+        return await response.Content.ReadAsByteArrayAsync();
+    }
+
+    [Obsolete("Use the new Registrations API instead.")]
+    public async Task<byte[]> GetRegistrationIdByNetworkIdAsync(Guid networkId, CancellationToken ct = default)
+    {
+        var response = await _http.GetAsync(
+            $"/api/network-registrations/registrationId?networkId={networkId}", ct);
+        await EnsureSuccessAsync(response);
+        return await response.Content.ReadAsByteArrayAsync();
     }
 
     // ─── Health ──────────────────────────────────────────────────────
