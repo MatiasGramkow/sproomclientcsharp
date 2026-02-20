@@ -1,3 +1,5 @@
+using System;
+
 namespace Sproom.Client.Models;
 
 public class InitiateVerificationRequest

@@ -1,14 +1,21 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
 using Sproom.Client.Models;
 
 namespace Sproom.Client;
 
 public class SproomClient : IDisposable
 {
+    private static readonly HttpMethod PatchMethod = new HttpMethod("PATCH");
+
     private readonly HttpClient _http;
     private readonly JsonSerializerOptions _jsonOptions;
 
@@ -56,30 +63,37 @@ public class SproomClient : IDisposable
 
     public async Task<Guid> SendDocumentAsync(byte[] documentContent, string? requestId = null, CancellationToken ct = default)
     {
-        using var content = new ByteArrayContent(documentContent);
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/documents") { Content = content };
-        if (!string.IsNullOrEmpty(requestId))
-            request.Headers.Add("X-Request-Id", requestId);
-
-        using var response = await _http.SendAsync(request, ct);
-        await EnsureSuccessAsync(response, ct);
-
-        if (response.Headers.TryGetValues("X-Sproom-DocumentId", out var values))
+        using (var content = new ByteArrayContent(documentContent))
         {
-            return Guid.Parse(values.First());
-        }
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
 
-        throw new SproomApiException((int)response.StatusCode, null, "Missing X-Sproom-DocumentId header in response");
+            using (var request = new HttpRequestMessage(HttpMethod.Post, "/api/documents") { Content = content })
+            {
+                if (!string.IsNullOrEmpty(requestId))
+                    request.Headers.Add("X-Request-Id", requestId);
+
+                using (var response = await _http.SendAsync(request, ct))
+                {
+                    await EnsureSuccessAsync(response);
+
+                    IEnumerable<string>? values;
+                    if (response.Headers.TryGetValues("X-Sproom-DocumentId", out values))
+                    {
+                        return Guid.Parse(values.First());
+                    }
+
+                    throw new SproomApiException((int)response.StatusCode, null, "Missing X-Sproom-DocumentId header in response");
+                }
+            }
+        }
     }
 
     public async Task<byte[]> GetDocumentAsync(Guid documentId, ApiDocumentFormat format, CancellationToken ct = default)
     {
         var formatStr = format.ToString().ToLowerInvariant();
         var response = await _http.GetAsync($"/api/documents/{documentId}/{formatStr}", ct);
-        await EnsureSuccessAsync(response, ct);
-        return await response.Content.ReadAsByteArrayAsync(ct);
+        await EnsureSuccessAsync(response);
+        return await response.Content.ReadAsByteArrayAsync();
     }
 
     public async Task UpdateDocumentFieldsAsync(Guid documentId, List<EnrichField> fields, CancellationToken ct = default)
@@ -164,15 +178,15 @@ public class SproomClient : IDisposable
     public async Task<byte[]> GetReportStatusAsync(Guid reportId, CancellationToken ct = default)
     {
         var response = await _http.GetAsync($"/api/reports/{reportId}/status", ct);
-        await EnsureSuccessAsync(response, ct);
-        return await response.Content.ReadAsByteArrayAsync(ct);
+        await EnsureSuccessAsync(response);
+        return await response.Content.ReadAsByteArrayAsync();
     }
 
     public async Task<byte[]> GetReportAsync(Guid reportId, CancellationToken ct = default)
     {
         var response = await _http.GetAsync($"/api/reports/{reportId}", ct);
-        await EnsureSuccessAsync(response, ct);
-        return await response.Content.ReadAsByteArrayAsync(ct);
+        await EnsureSuccessAsync(response);
+        return await response.Content.ReadAsByteArrayAsync();
     }
 
     public async Task DeleteReportAsync(Guid reportId, CancellationToken ct = default)
@@ -232,15 +246,15 @@ public class SproomClient : IDisposable
     public async Task<byte[]> GetVerificationDocumentAsync(Guid id, CancellationToken ct = default)
     {
         var response = await _http.GetAsync($"/api/peppol-participant-verifications/{id}/document", ct);
-        await EnsureSuccessAsync(response, ct);
-        return await response.Content.ReadAsByteArrayAsync(ct);
+        await EnsureSuccessAsync(response);
+        return await response.Content.ReadAsByteArrayAsync();
     }
 
     public async Task<byte[]> GetVerificationDocumentPreviewAsync(CancellationToken ct = default)
     {
         var response = await _http.GetAsync("/api/peppol-participant-verifications/document-preview", ct);
-        await EnsureSuccessAsync(response, ct);
-        return await response.Content.ReadAsByteArrayAsync(ct);
+        await EnsureSuccessAsync(response);
+        return await response.Content.ReadAsByteArrayAsync();
     }
 
     // ─── Recipients ──────────────────────────────────────────────────
@@ -297,53 +311,61 @@ public class SproomClient : IDisposable
     private async Task<T> GetAsync<T>(string url, CancellationToken ct)
     {
         var response = await _http.GetAsync(url, ct);
-        await EnsureSuccessAsync(response, ct);
-        return (await response.Content.ReadFromJsonAsync<T>(_jsonOptions, ct))!;
+        await EnsureSuccessAsync(response);
+        var body = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<T>(body, _jsonOptions)!;
     }
 
     private async Task<HttpResponseMessage> GetRawAsync(string url, CancellationToken ct)
     {
         var response = await _http.GetAsync(url, ct);
-        await EnsureSuccessAsync(response, ct);
+        await EnsureSuccessAsync(response);
         return response;
     }
 
     private async Task<T> PostAsync<T>(string url, object body, CancellationToken ct)
     {
         var json = JsonSerializer.Serialize(body, _jsonOptions);
-        using var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var response = await _http.PostAsync(url, content, ct);
-        await EnsureSuccessAsync(response, ct);
+        using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
+        {
+            var response = await _http.PostAsync(url, content, ct);
+            await EnsureSuccessAsync(response);
 
-        var responseBody = await response.Content.ReadAsStringAsync(ct);
-        if (string.IsNullOrEmpty(responseBody))
-            return default!;
+            var responseBody = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrEmpty(responseBody))
+                return default!;
 
-        return JsonSerializer.Deserialize<T>(responseBody, _jsonOptions)!;
+            return JsonSerializer.Deserialize<T>(responseBody, _jsonOptions)!;
+        }
     }
 
     private async Task<T> PutAsync<T>(string url, object body, CancellationToken ct)
     {
         var json = JsonSerializer.Serialize(body, _jsonOptions);
-        using var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var response = await _http.PutAsync(url, content, ct);
-        await EnsureSuccessAsync(response, ct);
-        return (await response.Content.ReadFromJsonAsync<T>(_jsonOptions, ct))!;
+        using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
+        {
+            var response = await _http.PutAsync(url, content, ct);
+            await EnsureSuccessAsync(response);
+            var responseBody = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<T>(responseBody, _jsonOptions)!;
+        }
     }
 
     private async Task PatchAsync(string url, object body, CancellationToken ct)
     {
         var json = JsonSerializer.Serialize(body, _jsonOptions);
-        using var content = new StringContent(json, Encoding.UTF8, "application/json");
-        using var request = new HttpRequestMessage(HttpMethod.Patch, url) { Content = content };
-        var response = await _http.SendAsync(request, ct);
-        await EnsureSuccessAsync(response, ct);
+        using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
+        using (var request = new HttpRequestMessage(PatchMethod, url) { Content = content })
+        {
+            var response = await _http.SendAsync(request, ct);
+            await EnsureSuccessAsync(response);
+        }
     }
 
     private async Task DeleteAsync(string url, CancellationToken ct)
     {
         var response = await _http.DeleteAsync(url, ct);
-        await EnsureSuccessAsync(response, ct);
+        await EnsureSuccessAsync(response);
     }
 
     private async Task<Guid> CreateReportAsync(string url, ReportRequest request, CancellationToken ct)
@@ -353,7 +375,7 @@ public class SproomClient : IDisposable
                           $"&endDateUtc={request.EndDateUtc:O}";
 
         var response = await _http.PostAsync(url + queryParams, null, ct);
-        await EnsureSuccessAsync(response, ct);
+        await EnsureSuccessAsync(response);
 
         if (response.Headers.Location is { } location)
         {
@@ -364,13 +386,13 @@ public class SproomClient : IDisposable
         throw new SproomApiException((int)response.StatusCode, null, "Missing Location header in report response");
     }
 
-    private static async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken ct)
+    private static async Task EnsureSuccessAsync(HttpResponseMessage response)
     {
         if (response.IsSuccessStatusCode)
             return;
 
         string? body = null;
-        try { body = await response.Content.ReadAsStringAsync(ct); } catch { }
+        try { body = await response.Content.ReadAsStringAsync(); } catch { }
 
         ErrorResponse? error = null;
         if (!string.IsNullOrEmpty(body))

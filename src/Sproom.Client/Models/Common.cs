@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+using System;
 
 namespace Sproom.Client.Models;
 

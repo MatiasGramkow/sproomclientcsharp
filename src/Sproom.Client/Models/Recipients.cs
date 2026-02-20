@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Sproom.Client.Models;
 
 public class LookupResult
