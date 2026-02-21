@@ -74,6 +74,20 @@ public class SproomClient : IDisposable
         return await GetAsync<ChildCompanyToken>($"/api/child-companies/{childCompanyId}/token", ct);
     }
 
+    /// <summary>
+    /// Creates a new SproomClient authenticated as the specified child company.
+    /// The returned client uses the child company's own token and must be disposed separately.
+    /// </summary>
+    public async Task<SproomClient> GetChildCompanyClientAsync(Guid childCompanyId, CancellationToken ct = default)
+    {
+        var token = await GetChildCompanyTokenAsync(childCompanyId, ct);
+        return new SproomClient(new SproomClientOptions
+        {
+            BaseUrl = _http.BaseAddress!.ToString(),
+            ApiToken = token.AccessToken
+        });
+    }
+
     public async Task<EnrollmentSuccessful> CreateEnrollmentAsync(PostCompanyEnrollment request, CancellationToken ct = default)
     {
         return await PostAsync<EnrollmentSuccessful>("/api/child-companies/enrollments", request, ct);
