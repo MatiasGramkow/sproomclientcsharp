@@ -1,27 +1,50 @@
 using System;
-using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace Sproom.Client.Models;
 
-public class ChildCompanyDto
+public class ChildCompanyGet
 {
-    public Guid ChildCompanyId { get; set; }
-    public string? CompanyName { get; set; }
-    public OrganizationIdentifier? OrganizationIdentifier { get; set; }
+    public Guid Id { get; set; }
+    public string CompanyName { get; set; } = string.Empty;
+    public OrganizationIdentifierModel OrganizationIdentifier { get; set; } = new();
 }
 
-public class CreateChildCompanyRequest
+public class ChildCompanyCreate
 {
-    public OrganizationIdentifier OrganizationIdentifier { get; set; } = new();
-    public string? CompanyName { get; set; }
+    public string CompanyName { get; set; } = string.Empty;
+    public OrganizationIdentifierModel OrganizationIdentifier { get; set; } = new();
+    public string? GlnNumber { get; set; }
 }
 
-public class ChildCompanyTokenResponse
+public class ChildCompanyToken
 {
-    public string Token { get; set; } = string.Empty;
+    [JsonPropertyName("access_token")]
+    public string AccessToken { get; set; } = string.Empty;
+
+    [JsonPropertyName("token_type")]
+    public string TokenType { get; set; } = string.Empty;
+
+    [JsonPropertyName("expires_in")]
+    public long ExpiresIn { get; set; }
+
+    [JsonPropertyName(".issued")]
+    public string Issued { get; set; } = string.Empty;
+
+    [JsonPropertyName(".expires")]
+    public string Expires { get; set; } = string.Empty;
 }
 
-public class EnrollmentRequest
+public class PostCompanyEnrollment
 {
-    public OrganizationIdentifier OrganizationIdentifier { get; set; } = new();
+    public string ChildCompanyName { get; set; } = string.Empty;
+    public OrganizationIdentifierModel OrganizationIdentifier { get; set; } = new();
+    public string UserEmail { get; set; } = string.Empty;
+    public string ParentCompanyName { get; set; } = string.Empty;
+    public bool ShouldSendEmail { get; set; }
+}
+
+public class EnrollmentSuccessful
+{
+    public string? EnrollmentLink { get; set; }
 }

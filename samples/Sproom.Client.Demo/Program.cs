@@ -76,7 +76,7 @@ namespace Sproom.Client.Demo
                     Console.WriteLine($"Found {registrations.Count} registrations");
                     foreach (var reg in registrations)
                     {
-                        Console.WriteLine($"  - {reg.NetworkId}: {reg.OrganizationIdentifier.SchemeId}:{reg.OrganizationIdentifier.Value}");
+                        Console.WriteLine($"  - {reg.NetworkId}: {reg.Network} | {reg.EndpointId.SchemeId}:{reg.EndpointId.Value} | Profiles: {string.Join(", ", reg.Profiles)}");
                     }
                 }
                 catch (SproomApiException ex)
@@ -92,7 +92,7 @@ namespace Sproom.Client.Demo
                     Console.WriteLine($"Found {subscriptions.Count} subscriptions");
                     foreach (var sub in subscriptions)
                     {
-                        Console.WriteLine($"  - {sub.SubscriptionId}: {sub.ServiceType} (since {sub.SubscribedOnUtc:yyyy-MM-dd})");
+                        Console.WriteLine($"  - {sub.Id}: {sub.Service} (since {sub.StartsOnUtc:yyyy-MM-dd})");
                     }
                 }
                 catch (SproomApiException ex)

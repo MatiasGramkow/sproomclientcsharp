@@ -1,12 +1,13 @@
 using System;
+using System.Text.Json.Serialization;
 
 namespace Sproom.Client.Models;
 
 public class CreateSubscriptionRequest
 {
-    public string ServiceType { get; set; } = string.Empty;
-    public Guid CompanyId { get; set; }
-    public Guid? PayingCompanyId { get; set; }
+    public string Service { get; set; } = string.Empty;
+    public Guid? CompanyId { get; set; }
+    public Guid? ServicePayerCompanyId { get; set; }
 }
 
 public class CreateSubscriptionResponse
@@ -16,13 +17,14 @@ public class CreateSubscriptionResponse
 
 public class GetSubscriptionResponse
 {
-    public Guid SubscriptionId { get; set; }
-    public string ServiceType { get; set; } = string.Empty;
-    public DateTime SubscribedOnUtc { get; set; }
-}
-
-public class SubscriptionError
-{
-    public string? ErrorCode { get; set; }
-    public string? Reason { get; set; }
+    public Guid Id { get; set; }
+    public DateTime StartsOnUtc { get; set; }
+    public DateTime EndsOnUtc { get; set; }
+    public Guid CompanyId { get; set; }
+    public Guid ServicePayerCompanyId { get; set; }
+    public string? Service { get; set; }
+    [Obsolete("This field is deprecated.")]
+    public bool Trial { get; set; }
+    [Obsolete("This field is deprecated.")]
+    public DateTime? TrialExpiresOnUtc { get; set; }
 }

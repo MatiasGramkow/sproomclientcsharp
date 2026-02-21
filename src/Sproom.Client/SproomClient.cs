@@ -49,19 +49,19 @@ public class SproomClient : IDisposable
 
     // ─── Child Companies ─────────────────────────────────────────────
 
-    public async Task<ChildCompanyDto> CreateChildCompanyAsync(CreateChildCompanyRequest request, CancellationToken ct = default)
+    public async Task<ChildCompanyGet> CreateChildCompanyAsync(ChildCompanyCreate request, CancellationToken ct = default)
     {
-        return await PostAsync<ChildCompanyDto>("/api/child-companies", request, ct);
+        return await PostAsync<ChildCompanyGet>("/api/child-companies", request, ct);
     }
 
-    public async Task<List<ChildCompanyDto>> GetChildCompaniesAsync(CancellationToken ct = default)
+    public async Task<List<ChildCompanyGet>> GetChildCompaniesAsync(CancellationToken ct = default)
     {
-        return await GetAsync<List<ChildCompanyDto>>("/api/child-companies", ct);
+        return await GetAsync<List<ChildCompanyGet>>("/api/child-companies", ct);
     }
 
-    public async Task<ChildCompanyDto> GetChildCompanyAsync(Guid childCompanyId, CancellationToken ct = default)
+    public async Task<ChildCompanyGet> GetChildCompanyAsync(Guid childCompanyId, CancellationToken ct = default)
     {
-        return await GetAsync<ChildCompanyDto>($"/api/child-companies/{childCompanyId}", ct);
+        return await GetAsync<ChildCompanyGet>($"/api/child-companies/{childCompanyId}", ct);
     }
 
     public async Task DeleteChildCompanyAsync(Guid childCompanyId, CancellationToken ct = default)
@@ -69,14 +69,14 @@ public class SproomClient : IDisposable
         await DeleteAsync($"/api/child-companies/{childCompanyId}", ct);
     }
 
-    public async Task<ChildCompanyTokenResponse> GetChildCompanyTokenAsync(Guid childCompanyId, CancellationToken ct = default)
+    public async Task<ChildCompanyToken> GetChildCompanyTokenAsync(Guid childCompanyId, CancellationToken ct = default)
     {
-        return await GetAsync<ChildCompanyTokenResponse>($"/api/child-companies/{childCompanyId}/token", ct);
+        return await GetAsync<ChildCompanyToken>($"/api/child-companies/{childCompanyId}/token", ct);
     }
 
-    public async Task CreateEnrollmentAsync(EnrollmentRequest request, CancellationToken ct = default)
+    public async Task<EnrollmentSuccessful> CreateEnrollmentAsync(PostCompanyEnrollment request, CancellationToken ct = default)
     {
-        await PostAsync<object>("/api/child-companies/enrollments", request, ct);
+        return await PostAsync<EnrollmentSuccessful>("/api/child-companies/enrollments", request, ct);
     }
 
     // ─── Company ─────────────────────────────────────────────────────
@@ -127,12 +127,6 @@ public class SproomClient : IDisposable
         }
     }
 
-    [Obsolete("Use GetDocumentAsync with format parameter instead.")]
-    public async Task<ApiDocument> GetDocumentMetadataAsync(Guid documentId, CancellationToken ct = default)
-    {
-        return await GetAsync<ApiDocument>($"/api/documents/{documentId}", ct);
-    }
-
     public async Task<byte[]> GetDocumentAsync(Guid documentId, ApiDocumentFormat format, CancellationToken ct = default)
     {
         var formatStr = format.ToString().ToLowerInvariant();
@@ -146,12 +140,12 @@ public class SproomClient : IDisposable
         await PatchAsync($"/api/documents/{documentId}", fields, ct);
     }
 
-    public async Task<List<DocumentStateEntry>> GetDocumentStateAsync(Guid documentId, CancellationToken ct = default)
+    public async Task<List<StateRead>> GetDocumentStateAsync(Guid documentId, CancellationToken ct = default)
     {
-        return await GetAsync<List<DocumentStateEntry>>($"/api/documents/{documentId}/state", ct);
+        return await GetAsync<List<StateRead>>($"/api/documents/{documentId}/state", ct);
     }
 
-    public async Task SetDocumentStateAsync(Guid documentId, StateChangeRequest stateChange, CancellationToken ct = default)
+    public async Task SetDocumentStateAsync(Guid documentId, StateChange stateChange, CancellationToken ct = default)
     {
         await PostAsync<object>($"/api/documents/{documentId}/state", stateChange, ct);
     }
@@ -161,7 +155,7 @@ public class SproomClient : IDisposable
         return await GetAsync<List<ResponseStatus>>($"/api/documents/{documentId}/responses", ct);
     }
 
-    public async Task<SetStatusResult> SetDocumentResponseAsync(Guid documentId, ResponseStateChangeRequest request, CancellationToken ct = default)
+    public async Task<SetStatusResult> SetDocumentResponseAsync(Guid documentId, ResponseStateChange request, CancellationToken ct = default)
     {
         return await PostAsync<SetStatusResult>($"/api/documents/{documentId}/responses", request, ct);
     }
@@ -188,9 +182,9 @@ public class SproomClient : IDisposable
         return await GetAsync<WebhookDto>($"/api/webhooks/{webhookId}", ct);
     }
 
-    public async Task<WebhookDto> UpdateWebhookAsync(Guid webhookId, WebhookRequest request, CancellationToken ct = default)
+    public async Task UpdateWebhookAsync(Guid webhookId, WebhookRequest request, CancellationToken ct = default)
     {
-        return await PutAsync<WebhookDto>($"/api/webhooks/{webhookId}", request, ct);
+        await PutRawAsync($"/api/webhooks/{webhookId}", request, ct);
     }
 
     public async Task DeleteWebhookAsync(Guid webhookId, CancellationToken ct = default)
@@ -261,21 +255,21 @@ public class SproomClient : IDisposable
         await DeleteAsync($"/api/registrations/{networkId}", ct);
     }
 
-    public async Task<RegistrationResult> RegisterNemHandelAsync(NemHandelRegistrationRequest request, CancellationToken ct = default)
+    public async Task<RegistrationResult> RegisterNemHandelAsync(NemHandelRegistrationModel request, CancellationToken ct = default)
     {
         return await PostAsync<RegistrationResult>("/api/registrations/nemhandel", request, ct);
     }
 
-    public async Task<RegistrationResult> RegisterPeppolAsync(PeppolRegistrationRequest request, CancellationToken ct = default)
+    public async Task<RegistrationResult> RegisterPeppolAsync(PeppolRegistrationModel request, CancellationToken ct = default)
     {
         return await PostAsync<RegistrationResult>("/api/registrations/peppol", request, ct);
     }
 
     // ─── PEPPOL Verifications ────────────────────────────────────────
 
-    public async Task<InitiateVerificationResponse> InitiateVerificationAsync(InitiateVerificationRequest request, CancellationToken ct = default)
+    public async Task<InitiateResponse> InitiateVerificationAsync(InitiateRequest request, CancellationToken ct = default)
     {
-        return await PostAsync<InitiateVerificationResponse>("/api/peppol-participant-verifications", request, ct);
+        return await PostAsync<InitiateResponse>("/api/peppol-participant-verifications", request, ct);
     }
 
     public async Task<List<VerificationDto>> GetVerificationsAsync(CancellationToken ct = default)
@@ -300,9 +294,10 @@ public class SproomClient : IDisposable
         return await response.Content.ReadAsByteArrayAsync();
     }
 
-    public async Task<byte[]> GetVerificationDocumentPreviewAsync(CancellationToken ct = default)
+    public async Task<byte[]> GetVerificationDocumentPreviewAsync(string signerEmail, string signerName, CancellationToken ct = default)
     {
-        var response = await _http.GetAsync("/api/peppol-participant-verifications/document-preview", ct);
+        var url = $"/api/peppol-participant-verifications/document-preview?signerEmail={Uri.EscapeDataString(signerEmail)}&signerName={Uri.EscapeDataString(signerName)}";
+        var response = await _http.GetAsync(url, ct);
         await EnsureSuccessAsync(response);
         return await response.Content.ReadAsByteArrayAsync();
     }
@@ -344,9 +339,9 @@ public class SproomClient : IDisposable
     // ─── Network Registrations (Deprecated) ────────────────────────
 
     [Obsolete("Use GetRegistrationsAsync instead.")]
-    public async Task<List<LegacyRegistrationRead>> GetNetworkRegistrationsAsync(CancellationToken ct = default)
+    public async Task<List<RegistrationRead>> GetNetworkRegistrationsAsync(CancellationToken ct = default)
     {
-        return await GetAsync<List<LegacyRegistrationRead>>("/api/network-registrations", ct);
+        return await GetAsync<List<RegistrationRead>>("/api/network-registrations", ct);
     }
 
     [Obsolete("Use RegisterNemHandelAsync instead.")]
@@ -356,9 +351,9 @@ public class SproomClient : IDisposable
     }
 
     [Obsolete("Use GetRegistrationAsync instead.")]
-    public async Task<LegacyRegistrationRead> GetNetworkRegistrationAsync(Guid registrationId, CancellationToken ct = default)
+    public async Task<RegistrationRead> GetNetworkRegistrationAsync(Guid registrationId, CancellationToken ct = default)
     {
-        return await GetAsync<LegacyRegistrationRead>($"/api/network-registrations/{registrationId}", ct);
+        return await GetAsync<RegistrationRead>($"/api/network-registrations/{registrationId}", ct);
     }
 
     [Obsolete("Use DeleteRegistrationAsync instead.")]
@@ -442,6 +437,16 @@ public class SproomClient : IDisposable
             await EnsureSuccessAsync(response);
             var responseBody = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<T>(responseBody, _jsonOptions)!;
+        }
+    }
+
+    private async Task PutRawAsync(string url, object body, CancellationToken ct)
+    {
+        var json = JsonSerializer.Serialize(body, _jsonOptions);
+        using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
+        {
+            var response = await _http.PutAsync(url, content, ct);
+            await EnsureSuccessAsync(response);
         }
     }
 
